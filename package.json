@@ -1,0 +1,12 @@
+{
+  "name": "gauntlet",
+  "version": "0.0.1",
+  "description": "Websocket server that manages all realtime imu data for visualization and processing",
+  "main": "server.js",
+  "repository": "https://github.com/Squishy123/gauntlet.git",
+  "author": "Christian Wang <christian.gnaw@gmail.com>",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "websocket": "^1.0.28"
+  }
+}
