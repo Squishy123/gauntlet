@@ -44,23 +44,26 @@ const uint16_t GYRO_SCALE_FACTOR = 131;
 unsigned long lastTime, deltaTime;
 
 //DOF measured_values
-float accelX, accelY, accelZ, temp, gyroX, gyroY, gyroZ;
+uint16_t maccelX, maccelY, maccelZ, mtemp, mgyroX, mgyroY, mgyroZ;
+
+//DOF measured_values
+double accelX, accelY, accelZ, temp, gyroX, gyroY, gyroZ;
 
 //Calculated Angles
-float accelAngleX, accelAngleY, accelAngleZ, gyroAngleX, gyroAngleY, gyroAngleZ;
+double accelAngleX, accelAngleY, accelAngleZ, gyroAngleX, gyroAngleY, gyroAngleZ;
 
 //Filtered Angles
-float filtAngleX, filtAngleY, filtAngleZ;
+double filtAngleX, filtAngleY, filtAngleZ;
 
 //network config
 const String NETWORK_SSID = "BELL117";
 const String NETWORK_PASSWORD = "7AD92993691F";
 
 //meta tag
-const String meta = "tester1";
+const String meta = "tester2";
 
 //rate
-const int BAUD_RATE = 115200;
+const int BAUD_RATE = 9600;
 
 //socket config
 const String WEBSOCKET_SERVER_HOST = "192.168.2.116";
@@ -130,15 +133,15 @@ void getMPU6050Readings()
   Read_RawValue(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_ACCEL_XOUT_H);
 
   //divide each by their sensitivity scale factors
-  accelX /= ACCEL_SCALE_FACTOR;
-  accelY /= ACCEL_SCALE_FACTOR;
-  accelZ /= ACCEL_SCALE_FACTOR;
-  gyroX /= GYRO_SCALE_FACTOR;
-  gyroY /= GYRO_SCALE_FACTOR;
-  gyroZ /= GYRO_SCALE_FACTOR;
+  accelX = (double)maccelX / ACCEL_SCALE_FACTOR;
+  accelY = (double)maccelY / ACCEL_SCALE_FACTOR;
+  accelZ = (double)maccelZ / ACCEL_SCALE_FACTOR;
+  gyroX = (double)mgyroX / GYRO_SCALE_FACTOR;
+  gyroY = (double)mgyroY / GYRO_SCALE_FACTOR;
+  gyroZ = (double)mgyroZ / GYRO_SCALE_FACTOR;
 
   //apply temperature formula
-  temp = temp / 340 + 36.53;
+  temp = (double)mtemp / 340 + 36.53;
 }
 
 //calculate accelerometer angles and drifting gyro angles
@@ -244,7 +247,7 @@ void socketClientInit()
   webSocketClient.begin(WEBSOCKET_SERVER_HOST, WEBSOCKET_PORT, "/");
   webSocketClient.onEvent(webSocketEvent);
   //reconnect if failed
-  webSocketClient.setReconnectInterval(5000);
+  //webSocketClient.setReconnectInterval(5000);
 }
 
 //socket event handling and looping
@@ -313,13 +316,13 @@ void Read_RawValue(uint8_t deviceAddress, uint8_t regAddress)
   Wire.write(regAddress);
   Wire.endTransmission();
   Wire.requestFrom(deviceAddress, (uint8_t)14);
-  accelX = (((int16_t)Wire.read() << 8) | Wire.read());
-  accelY = (((int16_t)Wire.read() << 8) | Wire.read());
-  accelZ = (((int16_t)Wire.read() << 8) | Wire.read());
-  temp = (((int16_t)Wire.read() << 8) | Wire.read());
-  gyroX = (((int16_t)Wire.read() << 8) | Wire.read());
-  gyroY = (((int16_t)Wire.read() << 8) | Wire.read());
-  gyroZ = (((int16_t)Wire.read() << 8) | Wire.read());
+  maccelX = (((int16_t)Wire.read() << 8) | Wire.read());
+  maccelY = (((int16_t)Wire.read() << 8) | Wire.read());
+  maccelZ = (((int16_t)Wire.read() << 8) | Wire.read());
+  mtemp = (((int16_t)Wire.read() << 8) | Wire.read());
+  mgyroX = (((int16_t)Wire.read() << 8) | Wire.read());
+  mgyroY = (((int16_t)Wire.read() << 8) | Wire.read());
+  mgyroZ = (((int16_t)Wire.read() << 8) | Wire.read());
 
   //record time since last reading
   unsigned long currentTime = millis();

@@ -26,7 +26,7 @@ wsServer.on('request', (req) => {
 
                 console.log(parsed);
                 //try {
-                    console.log(`Readings from ${parsed.meta}: ${JSON.stringify(parsed)}`);      
+                //console.log(`Readings from ${parsed.meta}: ${JSON.stringify(parsed)}`);      
                 /*} catch(err) {
                     console.log("Error Parsing")
                 }*/
