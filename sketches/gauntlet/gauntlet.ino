@@ -36,36 +36,39 @@ const uint8_t MPU6050_REGISTER_ACCEL_XOUT_H = 0x3B;
 const uint8_t MPU6050_REGISTER_SIGNAL_PATH_RESET = 0x68;
 
 // sensitivity scale factor respective to full scale setting provided in datasheet
-const uint16_t ACCEL_SCALE_FACTOR = 16384;
+const uint16_t ACCEL_SCALE_FACTOR = 16384; //16384;
 const uint16_t GYRO_SCALE_FACTOR = 131;
 
 //Keep track of polling rate
-unsigned long lastTime, deltaTime;
+unsigned long lastTime;
+float deltaTime;
 
 //DOF measured_values
-int16_t maccelX, maccelY, maccelZ, mtemp, mgyroX, mgyroY, mgyroZ;
+//All initial values = 0
+int16_t maccelX = 0, maccelY = 0, maccelZ = 0, mtemp = 0, mgyroX = 0, mgyroY = 0, mgyroZ = 0;
 
 //DOF measured_values
-double accelX, accelY, accelZ, temp, gyroX, gyroY, gyroZ;
+double accelX = 0, accelY = 0, accelZ = 0, temp = 0, gyroX = 0, gyroY = 0, gyroZ = 0;
 
 //Calculated Angles
-double accelAngleX, accelAngleY, accelAngleZ, gyroAngleX, gyroAngleY, gyroAngleZ;
+double accelAngleX = 0, accelAngleY = 0, accelAngleZ = 0, gyroAngleX = 0, gyroAngleY = 0, gyroAngleZ = 0;
 
 //Filtered Angles
-double filtAngleX, filtAngleY, filtAngleZ;
+//All initial angles = 0
+double filtAngleX = 0, filtAngleY = 0, filtAngleZ = 0;
 
 //network config
-const String NETWORK_SSID = "BELL117";
-const String NETWORK_PASSWORD = "7AD92993691F";
+const String NETWORK_SSID = "public wifi";
+const String NETWORK_PASSWORD = "91122919";
 
 //meta tag
-const String meta = "tester2";
+const String meta = "tester1";
 
 //rate
 const int BAUD_RATE = 115200;
 
 //socket config
-const String WEBSOCKET_SERVER_HOST = "192.168.2.116";
+const String WEBSOCKET_SERVER_HOST = "192.168.2.117";
 const int WEBSOCKET_PORT = 25565;
 
 //create TCP connections
@@ -147,24 +150,31 @@ void getMPU6050Readings()
 //calculate accelerometer angles and drifting gyro angles
 void calculateAngles()
 {
+  const float RADS_TO_DEGS = 180/3.14159;
+  
   //calculate accelerometer angles
-  accelAngleX = atan(accelX / sqrt(accelY * accelY + accelZ * accelZ));
-  accelAngleY = atan(accelY / sqrt(accelX * accelX + accelZ * accelZ));
-  accelAngleZ = atan(sqrt(accelX * accelX + accelY * accelY) / accelZ);
+  accelAngleX = atan(accelX / sqrt(accelY * accelY + accelZ * accelZ)) * RADS_TO_DEGS;
+  accelAngleY = atan(accelY / sqrt(accelX * accelX + accelZ * accelZ)) * RADS_TO_DEGS;
+  accelAngleZ = atan(sqrt(accelX * accelX + accelY * accelY) / accelZ) * RADS_TO_DEGS;
 
-  //set gyro angles
-  gyroAngleX = gyroX;
-  gyroAngleY = gyroY;
-  gyroAngleZ = gyroZ;
+  //calculate filtered gyro angles
+  gyroAngleX = gyroX * deltaTime + filtAngleX;
+  gyroAngleY = gyroY * deltaTime + filtAngleY;
+  gyroAngleZ = gyroZ * deltaTime + filtAngleZ;
 }
 
 //apply a complimentary filter to get a more precise orientation
 void applyFilter()
 {
-  const double filtConst1 = 0.98, filtConst2 = 0.02;
-  filtAngleX = filtConst1 * (filtAngleX + gyroAngleX * deltaTime) + filtConst2 * accelAngleX;
-  filtAngleY = filtConst1 * (filtAngleY + gyroAngleY * deltaTime) + filtConst2 * accelAngleY;
-  filtAngleZ = filtConst1 * (filtAngleZ + gyroAngleZ * deltaTime) + filtConst2 * accelAngleZ;
+  const double FILT_CONST = 0.96;
+  /*
+  filtAngleX = FILT_CONST1 * (filtAngleX + gyroAngleX * deltaTime) + (1-FILT_CONST1) * accelAngleX;
+  filtAngleY = FILT_CONST1 * (filtAngleY + gyroAngleY * deltaTime) + (1-FILT_CONST1) * accelAngleY;
+  filtAngleZ = FILT_CONST1 * (filtAngleZ + gyroAngleZ * deltaTime) + (1-FILT_CONST1) * accelAngleZ;
+  */
+  filtAngleX = FILT_CONST * gyroAngleX + (1.0-FILT_CONST) * accelAngleX;
+  filtAngleY = FILT_CONST * gyroAngleY + (1.0-FILT_CONST) * accelAngleY;
+  filtAngleZ = FILT_CONST * gyroAngleZ + (1.0-FILT_CONST) * accelAngleZ;
 }
 
 //helper function to turn doubles into strings
@@ -174,7 +184,7 @@ String doubleToString(double flt) {
   //min width=4, precision=5
   //return dtostrf(flt, 4, 5, doubleStr);
 
-  return String(flt);
+  return String(flt, 10);
 }
 
 //package all the values into JSON and return it
@@ -326,6 +336,6 @@ void Read_RawValue(uint8_t deviceAddress, uint8_t regAddress)
 
   //record time since last reading
   unsigned long currentTime = millis();
-  deltaTime = currentTime - lastTime;
+  deltaTime = (currentTime - lastTime)/1000.0;
   lastTime = currentTime;
 }
