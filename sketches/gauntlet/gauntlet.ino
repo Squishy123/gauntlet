@@ -6,7 +6,6 @@
   Description: Main driver for ESP1866 boards using the MPU6050 board.
   Grabs sensor readings and sends the data across a customizable websocket server.
 */
-
 #include <ArduinoJson.h>
 #include <ESP8266WiFi.h>
 #include <WebSockets.h>
@@ -96,9 +95,6 @@ void loop()
 {
   webSocketClient.loop();
 
-  //delay to prevent overload
-  delay(100);
-
   //get readings
   getMPU6050Readings();
 
@@ -129,7 +125,7 @@ void loop()
 
 //get MPU6050 readings
 void getMPU6050Readings()
-{
+{ 
   Read_RawValue(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_ACCEL_XOUT_H);
 
   //divide each by their sensitivity scale factors
@@ -142,6 +138,10 @@ void getMPU6050Readings()
 
   //apply temperature formula
   temp = (double)mtemp / 340 + 36.53;
+
+  //delay to prevent overload
+  delay(100);
+
 }
 
 //calculate accelerometer angles and drifting gyro angles
@@ -161,20 +161,20 @@ void calculateAngles()
 //apply a complimentary filter to get a more precise orientation
 void applyFilter()
 {
-  const float filtConst1 = 0.98, filtConst2 = 0.02;
+  const double filtConst1 = 0.98, filtConst2 = 0.02;
   filtAngleX = filtConst1 * (filtAngleX + gyroAngleX * deltaTime) + filtConst2 * accelAngleX;
   filtAngleY = filtConst1 * (filtAngleY + gyroAngleY * deltaTime) + filtConst2 * accelAngleY;
   filtAngleZ = filtConst1 * (filtAngleZ + gyroAngleZ * deltaTime) + filtConst2 * accelAngleZ;
 }
 
-//helper function to turn floats into strings
-String floatToString(float flt) {
-  //char floatStr[20];
+//helper function to turn doubles into strings
+String doubleToString(double flt) {
+  //char doubleStr[20];
 
   //min width=4, precision=5
-  //return dtostrf(flt, 4, 5, floatStr);
+  //return dtostrf(flt, 4, 5, doubleStr);
 
-  return String(flt, 7);
+  return String(flt);
 }
 
 //package all the values into JSON and return it
@@ -184,19 +184,19 @@ JsonObject& packageValues() {
 
 
   //measured acceleration in format (ax, ay, az)
-  package["measuredAccel"] = jsonBuffer.parseArray("[" + floatToString(accelX) + "," + floatToString(accelY) + "," + floatToString(accelZ) + "]");
+  package["measuredAccel"] = jsonBuffer.parseArray("[" + doubleToString(accelX) + "," + doubleToString(accelY) + "," + doubleToString(accelZ) + "]");
 
   //measured gyro orientation in format (gx, gy, gz)
-  package["measuredGyro"] = jsonBuffer.parseArray("[" + floatToString(gyroX) + "," + floatToString(gyroY) + "," + floatToString(gyroZ) + "]");
+  package["measuredGyro"] = jsonBuffer.parseArray("[" + doubleToString(gyroX) + "," + doubleToString(gyroY) + "," + doubleToString(gyroZ) + "]");
 
   //calculated acceleration angles in format(angle_x, angle_y, angle_z)
-  package["calculatedAccelAngles"] = jsonBuffer.parseArray("[" + floatToString(accelAngleX) + "," + floatToString(accelAngleY) + "," + floatToString(accelAngleZ) + "]");
+  package["calculatedAccelAngles"] = jsonBuffer.parseArray("[" + doubleToString(accelAngleX) + "," + doubleToString(accelAngleY) + "," + doubleToString(accelAngleZ) + "]");
 
   //calculated gyro orientation in format (gx, gy, gz)
-  package["calculatedGyroAngles"] = jsonBuffer.parseArray("[" + floatToString(gyroAngleX) + "," + floatToString(gyroAngleY) + "," + floatToString(gyroAngleZ) + "]");
+  package["calculatedGyroAngles"] = jsonBuffer.parseArray("[" + doubleToString(gyroAngleX) + "," + doubleToString(gyroAngleY) + "," + doubleToString(gyroAngleZ) + "]");
 
   //filtered angles in format (fx, fy, fz)
-  package["filteredAngles"] = jsonBuffer.parseArray("[" + floatToString(filtAngleX) + "," + floatToString(filtAngleY) + "," + floatToString(filtAngleZ) + "]");
+  package["filteredAngles"] = jsonBuffer.parseArray("[" + doubleToString(filtAngleX) + "," + doubleToString(filtAngleY) + "," + doubleToString(filtAngleZ) + "]");
   
   //measured temperature
   package["measuredTemp"] = temp;
