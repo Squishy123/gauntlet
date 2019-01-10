@@ -1,10 +1,10 @@
 /*
-Gauntlet Board Driver
-By: Christian Wang
-Release Date: 2019/01/09
+  Gauntlet Board Driver
+  By: Christian Wang
+  Release Date: 2019/01/09
 
-Description: Main driver for ESP1866 boards using the MPU6050 board. 
-Grabs sensor readings and sends the data across a customizable websocket server.
+  Description: Main driver for ESP1866 boards using the MPU6050 board.
+  Grabs sensor readings and sends the data across a customizable websocket server.
 */
 
 #include <ArduinoJson.h>
@@ -56,6 +56,10 @@ float filtAngleX, filtAngleY, filtAngleZ;
 const String NETWORK_SSID = "BELL117";
 const String NETWORK_PASSWORD = "7AD92993691F";
 
+//meta tag
+const String meta = "tester1";
+
+//rate
 const int BAUD_RATE = 115200;
 
 //socket config
@@ -89,31 +93,34 @@ void loop()
 {
   webSocketClient.loop();
 
+  //delay to prevent overload
+  delay(100);
+
   //get readings
   getMPU6050Readings();
 
   //calculate angles
   calculateAngles();
 
-  //apply filter 
+  //apply filter
   applyFilter();
 
   //package data
   JsonObject& packagedJSON = packageValues();
 
   //display output on serial port
-  packagedJSON.printTo(Serial);
+  //packagedJSON.printTo(Serial);
+  //Serial.print("\n");
 
   //if the server is connected
-  if(isConnected) {
+  if (isConnected) {
 
-  //write to string form
-  String jsonStr;
-  packagedJSON.printTo(jsonStr);
-  Serial.print("\n");
+    //write to string form
+    String jsonStr;
+    packagedJSON.printTo(jsonStr);
 
-  //send it via websockets
-  webSocketClient.sendTXT(jsonStr);
+    //send it via websockets
+    webSocketClient.sendTXT(jsonStr);
   }
 }
 
@@ -138,8 +145,8 @@ void getMPU6050Readings()
 void calculateAngles()
 {
   //calculate accelerometer angles
-  accelAngleX = atan(accelX / sqrt(accelY*accelY + accelZ*accelZ));
-  accelAngleY = atan(accelY / sqrt(accelX*accelX + accelZ*accelZ));
+  accelAngleX = atan(accelX / sqrt(accelY * accelY + accelZ * accelZ));
+  accelAngleY = atan(accelY / sqrt(accelX * accelX + accelZ * accelZ));
   accelAngleZ = atan(sqrt(accelX * accelX + accelY * accelY) / accelZ);
 
   //set gyro angles
@@ -172,25 +179,31 @@ JsonObject& packageValues() {
   DynamicJsonBuffer jsonBuffer(300);
   JsonObject& package = jsonBuffer.createObject();
 
-  
+
   //measured acceleration in format (ax, ay, az)
-  package["measuredAccel"] = jsonBuffer.parseArray("["+floatToString(accelX)+","+floatToString(accelY)+","+floatToString(accelZ)+"]");
+  package["measuredAccel"] = jsonBuffer.parseArray("[" + floatToString(accelX) + "," + floatToString(accelY) + "," + floatToString(accelZ) + "]");
 
   //measured gyro orientation in format (gx, gy, gz)
-  package["measuredGyro"] = jsonBuffer.parseArray("["+floatToString(gyroX)+","+floatToString(gyroY)+","+floatToString(gyroZ)+"]");
-  
+  package["measuredGyro"] = jsonBuffer.parseArray("[" + floatToString(gyroX) + "," + floatToString(gyroY) + "," + floatToString(gyroZ) + "]");
+
   //calculated acceleration angles in format(angle_x, angle_y, angle_z)
-  package["calculatedAccelAngles"] = jsonBuffer.parseArray("["+floatToString(accelAngleX)+","+floatToString(accelAngleY)+","+floatToString(accelAngleZ)+"]");
+  package["calculatedAccelAngles"] = jsonBuffer.parseArray("[" + floatToString(accelAngleX) + "," + floatToString(accelAngleY) + "," + floatToString(accelAngleZ) + "]");
 
   //calculated gyro orientation in format (gx, gy, gz)
-  package["calculatedGyroAngles"] = jsonBuffer.parseArray("["+floatToString(gyroAngleX)+","+floatToString(gyroAngleY)+","+floatToString(gyroAngleZ)+"]");
+  package["calculatedGyroAngles"] = jsonBuffer.parseArray("[" + floatToString(gyroAngleX) + "," + floatToString(gyroAngleY) + "," + floatToString(gyroAngleZ) + "]");
+
+  //filtered angles in format (fx, fy, fz)
+  package["filteredAngles"] = jsonBuffer.parseArray("[" + floatToString(filtAngleX) + "," + floatToString(filtAngleY) + "," + floatToString(filtAngleZ) + "]");
   
   //measured temperature
   package["measuredTemp"] = temp;
 
   //measured deltaTime
   package["deltaTime"] = deltaTime;
-  
+
+  //metatag
+  package["meta"] = meta;
+
   return package;
 }
 
@@ -239,32 +252,32 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
 {
   switch (type)
   {
-  case WStype_DISCONNECTED:
-    USE_SERIAL.printf("[WSc] Disconnected!\n");
-    isConnected = false;
-    break;
-  case WStype_CONNECTED:
-  {
-    USE_SERIAL.printf("[WSc] Connected to url: %s\n", payload);
+    case WStype_DISCONNECTED:
+      USE_SERIAL.printf("[WSc] Disconnected!\n");
+      isConnected = false;
+      break;
+    case WStype_CONNECTED:
+      {
+        USE_SERIAL.printf("[WSc] Connected to url: %s\n", payload);
 
-    isConnected = true;
-    // send message to server when Connected
-    webSocketClient.sendTXT("Connected");
-  }
-  break;
-  case WStype_TEXT:
-    USE_SERIAL.printf("[WSc] get text: %s\n", payload);
+        isConnected = true;
+        // send message to server when Connected
+        webSocketClient.sendTXT("Connected");
+      }
+      break;
+    case WStype_TEXT:
+      USE_SERIAL.printf("[WSc] get text: %s\n", payload);
 
-    // send message to server
-    // webSocket.sendTXT("message here");
-    break;
-  case WStype_BIN:
-    USE_SERIAL.printf("[WSc] get binary length: %u\n", length);
-    hexdump(payload, length);
+      // send message to server
+      // webSocket.sendTXT("message here");
+      break;
+    case WStype_BIN:
+      USE_SERIAL.printf("[WSc] get binary length: %u\n", length);
+      hexdump(payload, length);
 
-    // send data to server
-    // webSocket.sendBIN(payload, length);
-    break;
+      // send data to server
+      // webSocket.sendBIN(payload, length);
+      break;
   }
 }
 
