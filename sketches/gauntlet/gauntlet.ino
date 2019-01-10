@@ -43,7 +43,7 @@ const uint16_t GYRO_SCALE_FACTOR = 131;
 unsigned long lastTime, deltaTime;
 
 //DOF measured_values
-uint16_t maccelX, maccelY, maccelZ, mtemp, mgyroX, mgyroY, mgyroZ;
+int16_t maccelX, maccelY, maccelZ, mtemp, mgyroX, mgyroY, mgyroZ;
 
 //DOF measured_values
 double accelX, accelY, accelZ, temp, gyroX, gyroY, gyroZ;
@@ -62,7 +62,7 @@ const String NETWORK_PASSWORD = "7AD92993691F";
 const String meta = "tester2";
 
 //rate
-const int BAUD_RATE = 9600;
+const int BAUD_RATE = 115200;
 
 //socket config
 const String WEBSOCKET_SERVER_HOST = "192.168.2.116";
@@ -97,7 +97,7 @@ void loop()
 
   //get readings
   getMPU6050Readings();
-
+  
   //calculate angles
   calculateAngles();
 
