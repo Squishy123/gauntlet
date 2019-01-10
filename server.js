@@ -24,15 +24,11 @@ wsServer.on('request', (req) => {
             if (parsed != "Connected") {
                 parsed = JSON.parse(parsed);
 
-                //broadcast readings to all sockets
-                wsServer.connections.forEach((connection) => {
-                    connection.send(JSON.stringify(parsed));
-                });
-
                 //console.log(parsed);
                 console.log(`Readings from ${parsed.meta}: ${JSON.stringify(parsed)}`);       
-                
 
+
+                /*
                 //check if stationary
                 //calculate magnitude of acceleration
                 accel_mag = Math.sqrt(parsed["Ax"] * parsed["Ax"], parsed["Ay"] * parsed["Ay"], parsed["Az"] * parsed["Az"]);
@@ -47,7 +43,28 @@ wsServer.on('request', (req) => {
                 let highPass = (2 * cutoff) / (1 / samplePeriod);
 
                 //console.log(highPass * accel_mag);
+                */
 
+                //use complementary filtering method to get accurate orientation angles
+                //calculate accelAngle 
+                /*
+                let accelAngles = getAccelAngles(parsed["Ax"], parsed["Ay"], parsed["Az"]).map((a) => a * 180/Math.PI);
+
+                //grab gyroangles
+                let gyroAngles = [parsed["Gx"], parsed["Gy"], parsed["Gz"]].map((a) => a * 180/Math.PI);
+
+
+                let filteredAngles = accelAngles.map((accelAngle, i) => {
+                    return getFilteredAngle(gyroAngles[i], accelAngle, 1, 0.1);
+                });
+
+                //console.log(filteredAngles);
+                */
+                //broadcast readings to all sockets
+                wsServer.connections.forEach((connection) => {
+                    //connection.send(JSON.stringify(Object.assign({filteredAngles: filteredAngles}, parsed)));
+                    connection.send(JSON.stringify(parsed));
+                });
             }
         }
         else if (message.type === 'binary') {
@@ -55,3 +72,21 @@ wsServer.on('request', (req) => {
         }
     });
 });
+
+function getAccelAngles(ax, ay, az) {
+    //inclination angle relative to x-axis
+    let alpha = Math.atan(ax / Math.sqrt(ay * ay + az * az));
+
+    let beta = Math.atan(ay / Math.sqrt(ax * ax + az * az));
+
+    let gamma = Math.atan(Math.sqrt(ax * ax + ay * ay) / az);
+
+    return [alpha, beta, gamma];
+}
+
+function getFilteredAngle(gyroAngle, accelAngle, timeConst, deltaTime) {
+    let a = timeConst / (timeConst + deltaTime);
+    let filteredAngle = a * gyroAngle + (1 - a) * accelAngle;
+
+    return filteredAngle;
+}

@@ -8,18 +8,20 @@ Grabs sensor readings and sends the data across a customizable websocket server.
 */
 
 #include <ArduinoJson.h>
-#include <ESP1866.h>
+#include <ESP8266WiFi.h>
 #include <WebSockets.h>
 #include <WebSocketsClient.h>
 #include <WebSocketsServer.h>
 #include <Wire.h>
 
+#define USE_SERIAL Serial1
+
 //MPU6050 slave device address
 const uint8_t MPU6050_SLAVE_ADDRESS = 0x68;
 
-//SCL and SDA pins for I2C
-const uint8_t SCL = D6;
-const uint8_t SDA = D7;
+//SCL_PIN and SDA_PIN pins for I2C
+const uint8_t SCL_PIN = D6;
+const uint8_t SDA_PIN = D7;
 
 //MPU6050 configuration register addresses
 const uint8_t MPU6050_REGISTER_SMPLRT_DIV = 0x19;
@@ -74,13 +76,13 @@ void setup()
   Serial.begin(BAUD_RATE);
 
   //start I2C connection
-  Wire.begin(SDA, SCL);
+  Wire.begin(SDA_PIN, SCL_PIN);
 
   //Configure MPU6050
   MPU6050Init();
 
   //Configure websocket connection
-  SocketClient_Init();
+  socketClientInit();
 }
 
 void loop()
@@ -108,6 +110,7 @@ void loop()
   //write to string form
   String jsonStr;
   packagedJSON.printTo(jsonStr);
+  Serial.print("\n");
 
   //send it via websockets
   webSocketClient.sendTXT(jsonStr);
@@ -117,7 +120,7 @@ void loop()
 //get MPU6050 readings
 void getMPU6050Readings()
 {
-  Read_RawValue(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_XOUT_H);
+  Read_RawValue(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_ACCEL_XOUT_H);
 
   //divide each by their sensitivity scale factors
   accelX /= ACCEL_SCALE_FACTOR;
@@ -128,15 +131,15 @@ void getMPU6050Readings()
   gyroZ /= GYRO_SCALE_FACTOR;
 
   //apply temperature formula
-  Temperature = Temperature / 340 + 36.53;
+  temp = temp / 340 + 36.53;
 }
 
 //calculate accelerometer angles and drifting gyro angles
 void calculateAngles()
 {
   //calculate accelerometer angles
-  accelAngleX = atan(accelX / sqrt(accelY*accelY + accelZ*accelZ)));
-  accelAngleY = atan(accelY / sqrt(accelX*accelX + accelZ*accelZ)));
+  accelAngleX = atan(accelX / sqrt(accelY*accelY + accelZ*accelZ));
+  accelAngleY = atan(accelY / sqrt(accelX*accelX + accelZ*accelZ));
   accelAngleZ = atan(sqrt(accelX * accelX + accelY * accelY) / accelZ);
 
   //set gyro angles
@@ -154,34 +157,45 @@ void applyFilter()
   filtAngleZ = filtConst1 * (filtAngleZ + gyroAngleZ * deltaTime) + filtConst2 * accelAngleZ;
 }
 
+//helper function to turn floats into strings
+String floatToString(float flt) {
+  //char floatStr[20];
+
+  //min width=4, precision=5
+  //return dtostrf(flt, 4, 5, floatStr);
+
+  return String(flt, 7);
+}
+
 //package all the values into JSON and return it
 JsonObject& packageValues() {
-  DynamicJsonBuffer jsonBuffer(128);
+  DynamicJsonBuffer jsonBuffer(300);
   JsonObject& package = jsonBuffer.createObject();
 
+  
   //measured acceleration in format (ax, ay, az)
-  package["measuredAccel"] = {accelX, accelY, accelZ};
+  package["measuredAccel"] = jsonBuffer.parseArray("["+floatToString(accelX)+","+floatToString(accelY)+","+floatToString(accelZ)+"]");
 
   //measured gyro orientation in format (gx, gy, gz)
-  package["measuredGyro"] = {gyroX, gyroY, gyroZ};
-
+  package["measuredGyro"] = jsonBuffer.parseArray("["+floatToString(gyroX)+","+floatToString(gyroY)+","+floatToString(gyroZ)+"]");
+  
   //calculated acceleration angles in format(angle_x, angle_y, angle_z)
-  package["calculatedAccelAngles"] = {accelAngleX, accelAngleY, accelAngleZ};
+  package["calculatedAccelAngles"] = jsonBuffer.parseArray("["+floatToString(accelAngleX)+","+floatToString(accelAngleY)+","+floatToString(accelAngleZ)+"]");
 
   //calculated gyro orientation in format (gx, gy, gz)
-  package["calculatedGyroAngles"] = {gyroAngleX, gyroAngleY, gyroAngleZ};
-
+  package["calculatedGyroAngles"] = jsonBuffer.parseArray("["+floatToString(gyroAngleX)+","+floatToString(gyroAngleY)+","+floatToString(gyroAngleZ)+"]");
+  
   //measured temperature
   package["measuredTemp"] = temp;
 
   //measured deltaTime
   package["deltaTime"] = deltaTime;
-
+  
   return package;
 }
 
 //configure socket client and network
-void socketClient_Init()
+void socketClientInit()
 {
   //connect to wifi network
   Serial.println("Connecting to " + NETWORK_SSID);
@@ -255,19 +269,19 @@ void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
 }
 
 //configure MPU6050
-void MPU6050_Init()
+void MPU6050Init()
 {
   delay(150);
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_SMPLRT_DIV, 0x07);
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_PWR_MGMT_1, 0x01);
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_PWR_MGMT_2, 0x00);
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_CONFIG, 0x00);
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_GYRO_CONFIG, 0x00);  //set +/-250 degree/second full scale
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_ACCEL_CONFIG, 0x00); // set +/- 2g full scale
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_FIFO_EN, 0x00);
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_INT_ENABLE, 0x01);
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_SIGNAL_PATH_RESET, 0x00);
-  I2C_Write(MPU6050SlaveAddress, MPU6050_REGISTER_USER_CTRL, 0x00);
+  I2C_Write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_SMPLRT_DIV, 0x07);
+  I2C_Write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_PWR_MGMT_1, 0x01);
+  I2C_Write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_PWR_MGMT_2, 0x00);
+  I2C_Write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_CONFIG, 0x00);
+  I2C_Write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_GYRO_CONFIG, 0x00);  //set +/-250 degree/second full scale
+  I2C_Write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_ACCEL_CONFIG, 0x00); // set +/- 2g full scale
+  I2C_Write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_FIFO_EN, 0x00);
+  I2C_Write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_INT_ENABLE, 0x01);
+  I2C_Write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_SIGNAL_PATH_RESET, 0x00);
+  I2C_Write(MPU6050_SLAVE_ADDRESS, MPU6050_REGISTER_USER_CTRL, 0x00);
 }
 
 //write to I2C bus
@@ -286,13 +300,13 @@ void Read_RawValue(uint8_t deviceAddress, uint8_t regAddress)
   Wire.write(regAddress);
   Wire.endTransmission();
   Wire.requestFrom(deviceAddress, (uint8_t)14);
-  AccelX = (((int16_t)Wire.read() << 8) | Wire.read());
-  AccelY = (((int16_t)Wire.read() << 8) | Wire.read());
-  AccelZ = (((int16_t)Wire.read() << 8) | Wire.read());
-  Temperature = (((int16_t)Wire.read() << 8) | Wire.read());
-  GyroX = (((int16_t)Wire.read() << 8) | Wire.read());
-  GyroY = (((int16_t)Wire.read() << 8) | Wire.read());
-  GyroZ = (((int16_t)Wire.read() << 8) | Wire.read());
+  accelX = (((int16_t)Wire.read() << 8) | Wire.read());
+  accelY = (((int16_t)Wire.read() << 8) | Wire.read());
+  accelZ = (((int16_t)Wire.read() << 8) | Wire.read());
+  temp = (((int16_t)Wire.read() << 8) | Wire.read());
+  gyroX = (((int16_t)Wire.read() << 8) | Wire.read());
+  gyroY = (((int16_t)Wire.read() << 8) | Wire.read());
+  gyroZ = (((int16_t)Wire.read() << 8) | Wire.read());
 
   //record time since last reading
   unsigned long currentTime = millis();
