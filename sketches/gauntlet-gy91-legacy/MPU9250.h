@@ -68,6 +68,10 @@ class MPU9250
 {
   public:
     uint8_t begin();
+
+    //Keep track of deltaTime
+    long timeInit;
+    long deltaTime;
   
     //Accel
     void get_accel();

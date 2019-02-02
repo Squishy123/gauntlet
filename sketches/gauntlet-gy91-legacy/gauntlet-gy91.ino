@@ -53,5 +53,6 @@ void loop() {
   // Temp     
   Serial.print("Temperature is ");  Serial.print((((float) mpu.get_temp()) / 333.87 + 21.0), 1);  Serial.println(" degrees C");
   
+  //delay to prevent overflow
   delay(500);
 }

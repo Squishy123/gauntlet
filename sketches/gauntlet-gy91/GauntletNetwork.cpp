@@ -1,12 +1,10 @@
 /*
-    Gauntlet Network Manager (implementation)
+    Gauntlet Network Manager (source)
     By: Christian Wang
     Release Date: 2019/01/28
 
     Description: Provides functions to setup and connect to WiFi networks
     using the ESP8266 board. Also helps connect as a client of a websocket server.
-
-    CONTAINS ALL IMPLEMENTATIONS
 */
 #include "GauntletNetwork.h"
 
