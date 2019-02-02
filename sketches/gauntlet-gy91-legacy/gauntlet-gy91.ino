@@ -1,7 +1,8 @@
+#include <ArduinoJson>
+
 #include "MPU9250.h"
 #include "GauntletNetwork.h"
 
-GauntletNetwork gNet = GauntletNetwork();
 MPU9250 mpu = MPU9250();
 
 void setup(void)
@@ -9,11 +10,11 @@ void setup(void)
   Serial.begin(115200);
 
   //set network properties
-  gNet.WIFI_SSID = "Public Wifi";
-  gNet.WIFI_PASSWORD = "91122919";
+  WIFI_SSID = "Public Wifi";
+  WIFI_PASSWORD = "91122919";
 
-  gNet.CLIENT_ID = "GY-91 Module 1";
-  gNet.WS_HOST = "192.168.2.17";
+  CLIENT_ID = "GY-91 Module 1";
+  WS_HOST = "192.168.2.17";
 
   //connect to wifi network
   if (!wifiClientInit())
@@ -134,7 +135,7 @@ JsonObject& packageValues() {
   //package["deltaTime"] = deltaTime;
 
   //metatag
-  package["meta"] = gNet.CLIENT_ID;
+  package["meta"] = CLIENT_ID;
 
   return package;
 }

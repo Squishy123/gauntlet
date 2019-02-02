@@ -14,7 +14,7 @@
  * with a 500ms delay each time 
  * Return true if successful, false if unsuccessful
  */
-boolean GauntletNetwork::wifiClientInit()
+boolean wifiClientInit()
 {
     //verbose stuff
     Serial.println("Connecting to WiFi network" + WIFI_SSID);
@@ -47,19 +47,19 @@ boolean GauntletNetwork::wifiClientInit()
  * with a 500ms delay each time 
  * Return true if successful, false if unsuccessful
  */
-boolean GauntletNetwork::wsClientInit()
+boolean wsClientInit()
 {
     //verbose stuff
-    Serial.println("Connecting to WS server" + WEBSOCKET_SERVER_HOST);
+    Serial.println("Connecting to WS server" + WS_HOST);
     Serial.println("Attempting...");
 
     for (int i = 0; i < WS_CONNECTION_ATTEMPTS; i++)
     {
         //check if connected
-        if (client.connect(WEBSOCKET_SERVER_HOST, WEBSOCKET_PORT);)
+        if (client.connect(WS_HOST, WS_PORT);)
         {
             isWSConnected = true;
-            webSocketClient.begin(WEBSOCKET_SERVER_HOST, WEBSOCKET_PORT, "/");
+            webSocketClient.begin(WS_HOST, WS_PORT, "/");
             webSocketClient.onEvent(webSocketEvent);
 
             Serial.println("Successfully conencted to Gauntlet Server!");
@@ -74,7 +74,7 @@ boolean GauntletNetwork::wsClientInit()
     return false;
 }
 
-void GauntletNetwork::webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
+void webSocketEvent(WStype_t type, uint8_t *payload, size_t length)
 {
     switch (type)
     {
