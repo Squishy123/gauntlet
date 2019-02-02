@@ -14,15 +14,15 @@
 #include <WebSocketsServer.h>
 
 //network config
-String WIFI_SSID = "";
-String WIFI_PASSWORD = "";
+const String WIFI_SSID = "";
+const String WIFI_PASSWORD = "";
 
 //unique client id
-String CLIENT_ID = "";
+const String CLIENT_ID = "";
 
 //websocket config
-String WS_HOST = "";
-int WS_PORT = 25565;
+const String WS_HOST = "";
+const int WS_PORT = 25565;
 
 //client for creating TCP connections
 WiFiClient client;
@@ -31,10 +31,10 @@ WiFiClient client;
 WebSocketsClient wsClient;
 
 //number of tries for wifi connection before quitting
-int WIFI_CONNECTION_ATTEMPTS = 5;
+const int WIFI_CONNECTION_ATTEMPTS = 5;
 
 //number of tries for ws connection before quitting
-int WS_CONNECTION_ATTEMPTS = 5;
+const int WS_CONNECTION_ATTEMPTS = 5;
 
 //tracking connectivity
 bool isWifiConnected = false;
@@ -42,11 +42,11 @@ bool isWSConnected = false;
 
 class GauntletNetwork
 {
-  public:
-    //configure wifi client
-    boolean wifiClientInit();
-    //configure socket client
-    boolean wsClientInit();
-    //socket event handling and looping
-    void wsEvent(WStype_t type, uint8_t *payload, size_t length);
+    public:
+        //configure wifi client
+        boolean wifiClientInit();
+        //configure socket client 
+        boolean wsClientInit();
+        //socket event handling and looping
+        void wsEvent(WStype_t type, uint8_t *payload, size_t length);
 }
