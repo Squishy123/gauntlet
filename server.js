@@ -24,7 +24,7 @@ wsServer.on('request', (req) => {
                 let parsed = JSON.parse(JSON.stringify(message)).utf8Data;
                 if (parsed != "Connected") {
                     parsed = JSON.parse(parsed);
-    
+
                     console.log(parsed);
                     //try {
                     //console.log(`Readings from ${parsed.meta}: ${JSON.stringify(parsed)}`);      

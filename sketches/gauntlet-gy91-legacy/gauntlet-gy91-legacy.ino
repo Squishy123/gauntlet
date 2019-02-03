@@ -28,7 +28,7 @@ WebSocketsClient wsClient;
 int WIFI_CONNECTION_ATTEMPTS = 50;
 
 //number of tries for ws connection before quitting
-int WS_CONNECTION_ATTEMPTS = 50;
+int WS_CONNECTION_ATTEMPTS = 10;
 
 //tracking connectivity
 bool isWifiConnected = false;
@@ -176,7 +176,7 @@ void loop()
 
   //run filter
   //MadgwickQuaternionUpdate(-mpu.x, mpu.y, mpu.z, mpu.gx*PI/180.0f, -mpu.gy*PI/180.0f, -mpu.gz*PI/180.0f, mpu.my, -mpu.mx, mpu.mz);
-  MadgwickQuaternionUpdate(-mpu.x, mpu.y, mpu.z, mpu.gx, -mpu.gy, -mpu.gz, mpu.my, -mpu.mx, mpu.mz);
+  MahonyQuaternionUpdate(-mpu.x, mpu.y, mpu.z, mpu.gx*PI/180.0f, -mpu.gy*PI/180.0f, -mpu.gz*PI/180.0f, mpu.my, -mpu.mx, mpu.mz);
 
   //calculate AHRS
   calculateAHRS();
@@ -213,7 +213,6 @@ JsonObject& packageValues() {
   DynamicJsonBuffer jsonBuffer(300);
   JsonObject& package = jsonBuffer.createObject();
 
-
   //measured acceleration in format (ax, ay, az)
   package["measuredAccel"] = jsonBuffer.parseArray("[" + doubleToString(mpu.x) + "," + doubleToString(mpu.y) + "," + doubleToString(mpu.z) + "]");
 
@@ -222,7 +221,6 @@ JsonObject& packageValues() {
 
   //quaternion data
   package["quaternions"] = jsonBuffer.parseArray("[" + doubleToString(q[0]) + "," + doubleToString(q[1]) + "," + doubleToString(q[2]) + "," + doubleToString(q[3]) + "]");
-
 
   //store yaw, pitch, roll
   package["AHRS"] = jsonBuffer.parseArray("[" + doubleToString(ahrs[0]) + "," + doubleToString(ahrs[1]) + "," + doubleToString(ahrs[2]) + "]");
