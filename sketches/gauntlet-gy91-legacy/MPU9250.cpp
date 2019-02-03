@@ -3,7 +3,6 @@
 uint8_t MPU9250::begin() {
   Wire.begin(D7, D6);
   Wire.setClock(400000L);
-
   
   if (__read_byte(MPU9250_ADDRESS, WHO_AM_I) != WHO_AM_I_RESP)
   {
